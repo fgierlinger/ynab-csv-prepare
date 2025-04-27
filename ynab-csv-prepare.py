@@ -3,6 +3,13 @@
 import csv
 import datetime
 from pathlib import Path
+import re
+
+REGEX = [re.compile(reg) for reg in [
+    r"^Verwendungszweck: (?P<Payee>.+) Zahlungsreferenz: (?P<Memo>.+)$",
+    r"^Zahlungsempfänger: (?P<Payee>.+) Verwendungszweck: (?P<Memo>.+)$",
+    r"^Zahlungsreferenz: (?P<Payee>.{12})"
+]]
 
 
 def convert_csv(file: Path):
@@ -19,8 +26,17 @@ def convert_csv(file: Path):
             if len(row) < 6:
                 continue  # Skip incomplete rows
 
-            date1, memo, _, amount, _, _ = row  # Ignore unwanted fields
-            res.append([date1, "", memo, amount])
+            date1, _memo, _, amount, _, _ = row  # Ignore unwanted fields
+
+            for pattern in REGEX:
+                match = pattern.match(_memo)
+                if match:
+                    payee = match.group("Payee")
+                    memo = match.group("Memo") if "Memo" in match.groupdict() else ""
+                    if not memo:
+                        memo = _memo
+                    break
+            res.append([date1, payee, memo, amount])
 
     out_name = f"{file.parent}/ynab_{datetime.datetime.now().date()}.csv"
     with open(out_name, mode='wt', newline='', encoding='utf-8') as outfile:
