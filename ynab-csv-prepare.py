@@ -36,6 +36,9 @@ def convert_csv(file: Path):
                     if not memo:
                         memo = _memo
                     break
+                else:
+                    payee = ""
+                    memo = _memo
             res.append([date1, payee, memo, amount])
 
     out_name = f"{file.parent}/ynab_{datetime.datetime.now().date()}.csv"
